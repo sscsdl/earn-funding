@@ -7,7 +7,7 @@ function account (req) {
 }
 
 account.prototype.getPhase = function() {
-    return 1;
+    return 0;
 }
 
 account.prototype.getTradeAsset = function() {
@@ -15,7 +15,7 @@ account.prototype.getTradeAsset = function() {
 }
 
 account.prototype.getTradeAmount = function() {
-    return 100;
+    return 80;
 }
 
 module.exports = account();

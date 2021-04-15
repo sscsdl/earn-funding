@@ -93,7 +93,7 @@ binance.prototype.getHighFundingFuturesList = async function(least) {
 //       { asset: 'ETH', free: '0.04715000', locked: '0.00000000' },
 //     ]
 // }
-binance.prototype.getBalance = async function(asset, timestamp) {
+binance.prototype.getSpotBalance = async function(asset, timestamp) {
     let url = this.spotUrl + '/api/v3/account';
     let data = await this.get(url, {
         timestamp: timestamp,
@@ -270,9 +270,14 @@ binance.prototype.spotQuantityPrecision = async function(symbol, quantity) {
     return quantity;
 }
 
+// { symbol: 'TRXUSDT',
+//   orderId: 815354740,
+//   orderListId: -1,
+//   clientOrderId: '20210415231506',
+//   transactTime: 1618499707305 }
 binance.prototype.spotBuy = async function(symbol,orderId,price,quantity,timestamp) {
-    let url = this.spotUrl + '/api/v3/order/test';
-    // let url = this.spotUrl + '/api/v3/order';
+    // let url = this.spotUrl + '/api/v3/order/test';
+    let url = this.spotUrl + '/api/v3/order';
     let option = {
         // LTCBTC
         symbol: symbol, 
@@ -297,7 +302,7 @@ binance.prototype.spotBuy = async function(symbol,orderId,price,quantity,timesta
         newClientOrderId: orderId, // 自定义的唯一订单ID
         // stopPrice: '', // 仅 STOP_LOSS, STOP_LOSS_LIMIT, TAKE_PROFIT, 和TAKE_PROFIT_LIMIT 需要此参数。
         // icebergQty: '', // 仅使用 LIMIT, STOP_LOSS_LIMIT, 和 TAKE_PROFIT_LIMIT 创建新的 iceberg 订单时需要此参数
-        // newOrderRespType: 'ACK', // 设置响应JSON。 ACK，RESULT或FULL； "MARKET"和" LIMIT"订单类型默认为"FULL"，所有其他订单默认为"ACK"。
+        newOrderRespType: 'ACK', // 设置响应JSON。 ACK，RESULT或FULL； "MARKET"和" LIMIT"订单类型默认为"FULL"，所有其他订单默认为"ACK"。
         // recvWindow: '', // 交易时效性 赋值不能大于 60000 60秒
         timestamp: timestamp,//new Date().getTime(),
     };
@@ -308,9 +313,14 @@ binance.prototype.spotBuy = async function(symbol,orderId,price,quantity,timesta
     return data;
 }
 
+// { symbol: 'TRXUSDT',
+//   orderId: 815354825,
+//   orderListId: -1,
+//   clientOrderId: '20210415231507',
+//   transactTime: 1618499708081 }
 binance.prototype.spotSell = async function(symbol,orderId,price,quantity,timestamp) {
-    let url = this.spotUrl + '/api/v3/order/test';
-    // let url = this.spotUrl + '/api/v3/order';
+    // let url = this.spotUrl + '/api/v3/order/test';
+    let url = this.spotUrl + '/api/v3/order';
     let option = {
         // LTCBTC
         symbol: symbol, 
@@ -335,7 +345,7 @@ binance.prototype.spotSell = async function(symbol,orderId,price,quantity,timest
         newClientOrderId: orderId, // 自定义的唯一订单ID
         // stopPrice: '', // 仅 STOP_LOSS, STOP_LOSS_LIMIT, TAKE_PROFIT, 和TAKE_PROFIT_LIMIT 需要此参数。
         // icebergQty: '', // 仅使用 LIMIT, STOP_LOSS_LIMIT, 和 TAKE_PROFIT_LIMIT 创建新的 iceberg 订单时需要此参数
-        // newOrderRespType: 'ACK', // 设置响应JSON。 ACK，RESULT或FULL； "MARKET"和" LIMIT"订单类型默认为"FULL"，所有其他订单默认为"ACK"。
+        newOrderRespType: 'ACK', // 设置响应JSON。 ACK，RESULT或FULL； "MARKET"和" LIMIT"订单类型默认为"FULL"，所有其他订单默认为"ACK"。
         // recvWindow: '', // 交易时效性 赋值不能大于 60000 60秒
         timestamp: timestamp,//new Date().getTime(),
     };
@@ -346,15 +356,89 @@ binance.prototype.spotSell = async function(symbol,orderId,price,quantity,timest
     return data;
 }
 
+// { symbol: 'TRXUSDT',
+//   orderId: 815354740,
+//   orderListId: -1,
+//   clientOrderId: '20210415231506',
+//   price: '0.00000000',
+//   origQty: '80.00000000',
+//   executedQty: '80.00000000',
+//   cummulativeQuoteQty: '12.93840000',
+//   status: 'FILLED',
+//   timeInForce: 'GTC',
+//   type: 'MARKET',
+//   side: 'BUY',
+//   stopPrice: '0.00000000',
+//   icebergQty: '0.00000000',
+//   time: 1618499707305,
+//   updateTime: 1618499707305,
+//   isWorking: true,
+//   origQuoteOrderQty: '0.00000000' }
+binance.prototype.getSpotOrder = async function(symbol,orderId,timestamp) {
+    var data = await this.get(this.spotUrl + '/api/v3/order', {
+        // symbol	STRING	YES	
+        symbol: symbol,
+        // orderId	LONG	NO	
+        // origClientOrderId	STRING	NO	
+        origClientOrderId: orderId,
+        // recvWindow	LONG	NO	赋值不得大于 60000
+        // timestamp	LONG	YES	
+        timestamp: timestamp,
+    }, true);
+    return data;
+}
+
+binance.prototype.futuresLeverage = async function(symbol,leverage,timestamp) {
+    let url = this.futuresUrl + '/fapi/v1/leverage';
+    let option = {
+        // symbol	STRING	YES	交易对
+        symbol: symbol, 
+        // leverage	INT	YES	目标杠杆倍数：1 到 125 整数
+        leverage: leverage,
+        // recvWindow	LONG	NO	
+        // timestamp	LONG	YES
+        timestamp: timestamp,//new Date().getTime(),
+    };
+    let data = await this.post(url, option).catch (error => console.log('err', error));
+    return data;
+}
+
+// { orderId: 3139736775,
+//     symbol: 'TRXUSDT',  
+//     status: 'NEW',      
+            // NEW 新建订单
+            // PARTIALLY_FILLED 部分成交
+            // FILLED 全部成交
+            // CANCELED 已撤销
+            // REJECTED 订单被拒绝
+            // EXPIRED 订单过期(根据timeInForce参数规则)
+//     clientOrderId: '20210415225110',
+//     price: '0',         
+//     avgPrice: '0.00000',
+//     origQty: '50',      
+//     executedQty: '0',   
+//     cumQty: '0',        
+//     cumQuote: '0',      
+//     timeInForce: 'GTC', 
+//     type: 'MARKET',     
+//     reduceOnly: false,  
+//     closePosition: false,           
+//     side: 'SELL',       
+//     positionSide: 'SHORT',          
+//     stopPrice: '0',     
+//     workingType: 'CONTRACT_PRICE',  
+//     priceProtect: false,
+//     origType: 'MARKET', 
+//     updateTime: 1618498270832 }     
 binance.prototype.futuresShort = async function(symbol,orderId,price,quantity,timestamp) {
-    let url = this.futuresUrl + '/fapi/v1/order/test';
-    // let url = this.spotUrl + '/fapi/v1/order';
+    // let url = this.futuresUrl + '/fapi/v1/order/test';
+    let url = this.futuresUrl + '/fapi/v1/order';
     let option = {
         // LTCBTC
         symbol: symbol, 
         // 订单方向 
         // BUY 买入 SELL 卖出
-        side: 'BUY',
+        side: 'SELL',
         // 持仓方向
         // 单向持仓模式下非必填，默认且仅可填BOTH;
         // 在双向持仓模式下必填,且仅可选择 LONG 或 SHORT,LONG方向上不支持BUY; SHORT 方向上不支持SELL
@@ -390,14 +474,14 @@ binance.prototype.futuresShort = async function(symbol,orderId,price,quantity,ti
 }
 
 binance.prototype.futuresShortClose = async function(symbol,orderId,price,quantity,timestamp) {
-    let url = this.futuresUrl + '/fapi/v1/order/test';
-    // let url = this.spotUrl + '/fapi/v1/order';
+    // let url = this.futuresUrl + '/fapi/v1/order/test';
+    let url = this.futuresUrl + '/fapi/v1/order';
     let option = {
         // LTCBTC
         symbol: symbol, 
         // 订单方向 
         // BUY 买入 SELL 卖出
-        side: 'SELL',
+        side: 'BUY',
         // 持仓方向
         // 单向持仓模式下非必填，默认且仅可填BOTH;
         // 在双向持仓模式下必填,且仅可选择 LONG 或 SHORT,LONG方向上不支持BUY; SHORT 方向上不支持SELL
@@ -405,7 +489,7 @@ binance.prototype.futuresShortClose = async function(symbol,orderId,price,quanti
         // 订单类型 LIMIT, MARKET, STOP, TAKE_PROFIT, STOP_MARKET, TAKE_PROFIT_MARKET, TRAILING_STOP_MARKET
         type: 'MARKET',
         // true, false; 非双开模式下默认false；双开模式下不接受此参数； 使用closePosition不支持此参数。
-        // reduceOnly: false,
+        // reduceOnly: true,
         // quantity	DECIMAL	NO	下单数量,使用closePosition不支持此参数。
         quantity: quantity,
         // price	DECIMAL	NO	委托价格
@@ -413,7 +497,9 @@ binance.prototype.futuresShortClose = async function(symbol,orderId,price,quanti
         // newClientOrderId	STRING	NO	用户自定义的订单号，不可以重复出现在挂单中。如空缺系统会自动赋值。必须满足正则规则 ^[\.A-Z\:/a-z0-9_-]{1,36}$
         newClientOrderId: orderId,
         // stopPrice	DECIMAL	NO	触发价, 仅 STOP, STOP_MARKET, TAKE_PROFIT, TAKE_PROFIT_MARKET 需要此参数
+        // stopPrice: 0.00001,
         // closePosition	STRING	NO	true, false；触发后全部平仓，仅支持STOP_MARKET和TAKE_PROFIT_MARKET；不与quantity合用；自带只平仓效果，不与reduceOnly 合用
+        // closePosition: true,
         // activationPrice	DECIMAL	NO	追踪止损激活价格，仅TRAILING_STOP_MARKET 需要此参数, 默认为下单当前市场价格(支持不同workingType)
         // callbackRate	DECIMAL	NO	追踪止损回调比例，可取值范围[0.1, 5],其中 1代表1% ,仅TRAILING_STOP_MARKET 需要此参数
         // timeInForce	ENUM	NO	有效方法
@@ -425,24 +511,10 @@ binance.prototype.futuresShortClose = async function(symbol,orderId,price,quanti
         
         timestamp: timestamp,//new Date().getTime(),
     };
-    if (price) {
+    if (price !== null) {
         option.price = price;
     }
     let data = await this.post(url, option).catch (error => console.log('err', error));
-    return data;
-}
-
-binance.prototype.getSpotOrder = async function(symbol,orderId,timestamp) {
-    var data = await this.get(this.spotUrl + '/api/v3/order', {
-        // symbol	STRING	YES	
-        symbol: symbol,
-        // orderId	LONG	NO	
-        // origClientOrderId	STRING	NO	
-        origClientOrderId: orderId,
-        // recvWindow	LONG	NO	赋值不得大于 60000
-        // timestamp	LONG	YES	
-        timestamp: timestamp,
-    }, true);
     return data;
 }
 
