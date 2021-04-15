@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="/static/js/jquery.min.js" type="text/javascript"></script>
+    <script src="/static/js/echarts.min.js" type="text/javascript"></script>
+    <script src="https://raw.githubusercontent.com/apache/echarts/5.0.2/dist/echarts.min.js" type="text/javascript"></script>
+</head>
+<body>
+    hello
+    <a href="javascript:void(0);" onclick="getData('1m')">1m</a>
+    <a href="javascript:void(0);" onclick="getData('3m')">3m</a>
+    <a href="javascript:void(0);" onclick="getData('15m')">15m</a>
+    <a href="javascript:void(0);" onclick="getData('30m')">30m</a>
+    <a href="javascript:void(0);" onclick="getData('1h')">1h</a>
+    <a href="javascript:void(0);" onclick="getData('2h')">2h</a>
+    <a href="javascript:void(0);" onclick="getData('4h')">4h</a>
+    <a href="javascript:void(0);" onclick="getData('8h')">8h</a>
+    <a href="javascript:void(0);" onclick="getData('1d')">1d</a>
+    <div id="main" style="width: 100%;height:600px;"></div>
+    <script>
+        var cdata = [];
+        var fcdata = [];
+        var cdatax = [];
+        var fcdatax = [];
+        var ccdata = [];
+        var myChart = echarts.init(document.getElementById('main'));
+        var option;
+        option = {
+            title: {
+                text: '-'
+            },
+            legend: {
+                data: ['x', 'f']
+            },
+            tooltip: {
+                trigger: 'axis',
+                // formatter: function (params) {
+                //     // params = params[0];
+                //     console.log(params);
+                //     var date = new Date(Number(params[0]+'000'));
+                //     return date.getMinutes()+':'+date.getSeconds() + ' - ' + params.value[1];
+                //     // var date = new Date(params.name);
+                //     // return date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear() + ' : ' + params.value[1];
+                // },
+                // axisPointer: {
+                //     animation: false
+                // }
+                axisPointer: {
+                    label: {
+                        formatter: function (value, index) {
+                            // console.log(value);
+                            // return value;
+                            var date = new Date(Number(value.value));
+                            return date.getMonth()+'-'+date.getDate()+' '+date.getHours()+':'+date.getMinutes();
+                        }
+                    }
+                }
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                // splitLine: {
+                //     show: false
+                // }
+                axisLabel: {
+                    formatter: function (value, index) {
+                        var date = new Date(Number(value));
+                        return date.getDate()+'d'+date.getHours()+':'+date.getMinutes();
+                    }
+                }
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    // boundaryGap: [0, '100%'],
+                    // splitLine: {
+                    //     show: false
+                    // }
+                    min: 'dataMin',
+                    max: 'dataMax',
+                },
+                {
+                    name: 'diff',
+                    nameLocation: 'start',
+                    min: 'dataMin',
+                    max: 'dataMax',
+                    type: 'value',
+                    // inverse: true
+                }
+            ],
+            series: [{
+                name: 'x',
+                type: 'line',
+                // showSymbol: false,
+                // hoverAnimation: false,
+                // data: data
+                // tooltip: {
+                //     formatter: function (params) {
+                //         // params = params[0];
+                //         console.log(params);
+                //         var date = new Date(Number(params[0]+'000'));
+                //         return date.getMinutes()+':'+date.getSeconds() + ' - ' + params.value[1];
+                //         // var date = new Date(params.name);
+                //         // return date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear() + ' : ' + params.value[1];
+                //     },
+                // }
+            },{
+                name: 'h',
+                type: 'line',
+                // showSymbol: false,
+                // hoverAnimation: false,
+                // data: data
+            },{
+                name: 'c',
+                yAxisIndex: 1,
+                type: 'line',
+                // showSymbol: false,
+                // hoverAnimation: false,
+                // data: [[1617754260000, "10"],[1617754320000, "11"]]
+            }]
+        }
+        $(function(){
+            // function randomData() {
+            //     now = new Date(+now + oneDay);
+            //     value = value + Math.random() * 21 - 10;
+            //     return {
+            //         name: now.toString(),
+            //         value: [
+            //             [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
+            //             Math.round(value)
+            //         ]
+            //     };
+            // }
+
+            // var data = [];
+            // var now = +new Date(1997, 9, 3);
+            // var oneDay = 24 * 3600 * 1000;
+            // var value = Math.random() * 1000;
+            // for (var i = 0; i < 1000; i++) {
+            //     data.push(randomData());
+            // }
+
+            // console.log(data);
+
+            // setInterval(function () {
+
+            //     for (var i = 0; i < 5; i++) {
+            //         data.shift();
+            //         data.push(randomData());
+            //     }
+
+            //     myChart.setOption({
+            //         series: [{
+            //             data: data
+            //         }]
+            //     });
+            // }, 1000);
+
+            // option && myChart.setOption(option);
+
+
+            
+            // Create WebSocket connection.
+            var url = 'wss://stream.binance.com:9443/ws/btcusdt@kline_1m';
+            // {
+            //   "e": "kline",     // 事件类型
+            //   "E": 123456789,   // 事件时间
+            //   "s": "BNBBTC",    // 交易对
+            //   "k": {
+            //     "t": 123400000, // 这根K线的起始时间
+            //     "T": 123460000, // 这根K线的结束时间
+            //     "s": "BNBBTC",  // 交易对
+            //     "i": "1m",      // K线间隔
+            //     "f": 100,       // 这根K线期间第一笔成交ID
+            //     "L": 200,       // 这根K线期间末一笔成交ID
+            //     "o": "0.0010",  // 这根K线期间第一笔成交价
+            //     "c": "0.0020",  // 这根K线期间末一笔成交价
+            //     "h": "0.0025",  // 这根K线期间最高成交价
+            //     "l": "0.0015",  // 这根K线期间最低成交价
+            //     "v": "1000",    // 这根K线期间成交量
+            //     "n": 100,       // 这根K线期间成交笔数
+            //     "x": false,     // 这根K线是否完结(是否已经开始下一根K线)
+            //     "q": "1.0000",  // 这根K线期间成交额
+            //     "V": "500",     // 主动买入的成交量
+            //     "Q": "0.500",   // 主动买入的成交额
+            //     "B": "123456"   // 忽略此参数
+            //   }
+            // }
+            var furl = 'wss://fstream.binance.com/ws/btcusdt@kline_1m';
+            // {
+            //   "e": "kline",     // 事件类型
+            //   "E": 123456789,   // 事件时间
+            //   "s": "BNBUSDT",    // 交易对
+            //   "k": {
+            //     "t": 123400000, // 这根K线的起始时间
+            //     "T": 123460000, // 这根K线的结束时间
+            //     "s": "BNBUSDT",  // 交易对
+            //     "i": "1m",      // K线间隔
+            //     "f": 100,       // 这根K线期间第一笔成交ID
+            //     "L": 200,       // 这根K线期间末一笔成交ID
+            //     "o": "0.0010",  // 这根K线期间第一笔成交价
+            //     "c": "0.0020",  // 这根K线期间末一笔成交价
+            //     "h": "0.0025",  // 这根K线期间最高成交价
+            //     "l": "0.0015",  // 这根K线期间最低成交价
+            //     "v": "1000",    // 这根K线期间成交量
+            //     "n": 100,       // 这根K线期间成交笔数
+            //     "x": false,     // 这根K线是否完结(是否已经开始下一根K线)
+            //     "q": "1.0000",  // 这根K线期间成交额
+            //     "V": "500",     // 主动买入的成交量
+            //     "Q": "0.500",   // 主动买入的成交额
+            //     "B": "123456"   // 忽略此参数
+            //   }
+            // }
+            // const socket = new WebSocket(url);
+            // const fsocket = new WebSocket(furl);
+
+            // Connection opened
+            // socket.addEventListener('open', function (event) {
+            //     socket.send('{"method": "SUBSCRIBE","params":["btcusdt@kline_1m","btcusdt@kline_1m"],"id": 1}');
+            // });
+
+            // Listen for messages
+            // socket.addEventListener('message', function (event) {
+            //     console.log(event.data);
+            //     var data = JSON.parse(event.data);
+            //     if (cdatax.length > 0 && cdatax[cdatax.length-1] == data['k']['t']) {
+            //         cdata.pop();
+            //         cdatax.pop();
+            //     }
+            //     cdatax.push(data['k']['t']);
+            //     var date = new Date(Number(data['k']['t']));
+            //     cdata.push([date.getHours()+':'+date.getMinutes()+':'+date.getSeconds(), data['k']['c']]);
+            //     // cdata.push({
+            //     //     name: (new Date(data['k']['t'])).toUTCString(),
+            //     //     value: [data['k']['t'], data['k']['c']]
+            //     // });
+            //     myChart.setOption({
+            //         series: [{
+            //             data: cdata
+            //         },{
+            //             data: fcdata
+            //         }]
+            //     });
+            // });
+            // fsocket.addEventListener('message', function (event) {
+            //     console.log(event.data);
+            //     var data = JSON.parse(event.data);
+            //     if (fcdatax.length > 0 && fcdatax[fcdatax.length-1] == data['k']['t']) {
+            //         fcdatax.pop();
+            //         fcdata.pop();
+            //     }
+            //     fcdatax.push(data['k']['t']);
+            //     var date = new Date(Number(data['k']['t']));
+            //     fcdata.push([date.getHours()+':'+date.getMinutes()+':'+date.getSeconds(), data['k']['c']]);
+            //     // fcdata.push({
+            //     //     name: (new Date(data['k']['t'])).toUTCString(),
+            //     //     value: [data['k']['t'], data['k']['c']]
+            //     // });
+            //     myChart.setOption({
+            //         series: [{
+            //             data: cdata
+            //         },{
+            //             data: fcdata
+            //         }]
+            //     });
+            // });
+
+            var url = 'btcusdt@markPrice';
+            const socket = new WebSocket(url);
+            // {
+            //     "e": "markPriceUpdate",     // 事件类型
+            //     "E": 1562305380000,         // 事件时间
+            //     "s": "BTCUSDT",             // 交易对
+            //     "p": "11794.15000000",      // 标记价格
+            //     "i": "11784.62659091",      // 现货指数价格
+            //     "P": "11784.25641265",      // 预估结算价,仅在结算前最后一小时有参考价值
+            //     "r": "0.00038167",          // 资金费率
+            //     "T": 1562306400000          // 下次资金时间
+            // }
+            // Connection opened
+            // socket.addEventListener('open', function (event) {
+            //     socket.send('{"method": "SUBSCRIBE","params":["btcusdt@kline_1m","btcusdt@kline_1m"],"id": 1}');
+            // });
+
+            // Listen for messages
+            socket.addEventListener('message', function (event) {
+                console.log(event.data);
+                var data = JSON.parse(event.data);
+                if (cdatax.length > 0 && cdatax[cdatax.length-1] == data['k']['t']) {
+                    cdata.pop();
+                    cdatax.pop();
+                }
+                cdatax.push(data['k']['t']);
+                var date = new Date(Number(data['k']['t']));
+                cdata.push([date.getHours()+':'+date.getMinutes()+':'+date.getSeconds(), data['k']['c']]);
+                // cdata.push({
+                //     name: (new Date(data['k']['t'])).toUTCString(),
+                //     value: [data['k']['t'], data['k']['c']]
+                // });
+                myChart.setOption({
+                    series: [{
+                        data: cdata
+                    },{
+                        data: fcdata
+                    }]
+                });
+            });
+        });
+
+
+    </script>
+</body>
+</html>

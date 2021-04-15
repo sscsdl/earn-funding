@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="/static/js/jquery.min.js" type="text/javascript"></script>
+    <script src="/static/js/echarts.min.js" type="text/javascript"></script>
+    <script src="https://raw.githubusercontent.com/apache/echarts/5.0.2/dist/echarts.min.js" type="text/javascript"></script>
+    <style>
+        .left{width: 200px;float: left;}
+        .right{width: 98%;padding-left: 200px;box-sizing: border-box;}
+    </style>
+</head>
+<body>
+    <div class="left">
+        <ul></ul>
+    </div>
+    <div class="right">
+        <div id="main" style="width: 100%;height:600px;"></div>
+    </div>
+    <script>
+        var symbol = null;
+        var data_spot = [];
+        var data_futher = [];
+        var data_diff = [];
+        var data_diff_markpoint = [];
+        var data_funding = [];
+        var diff_avg = 0;
+        var myChart = echarts.init(document.getElementById('main'));
+        var option;
+        option = {
+            title: {
+                text: '-'
+            },
+            legend: {
+                data: ['diff', 'funding']
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    label: {
+                        formatter: function (value, index) {
+                            var date = new Date(Number(value.value));
+                            return date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
+                        }
+                    }
+                }
+            },
+            xAxis: {
+                // type: 'category',
+                // boundaryGap: false,
+                axisLabel: {
+                    formatter: function (value, index) {
+                        var date = new Date(Number(value));
+                        return date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
+                    }
+                },
+                min: 'dataMin',
+                max: 'dataMax',
+            },
+            yAxis: [
+                {
+                    name: 'price',
+                    type: 'value',
+                    min: 'dataMin',
+                    max: 'dataMax',
+                },
+                {
+                    name: 'diff',
+                    type: 'value',
+                    nameLocation: 'end',
+                    min: 'dataMin',
+                    max: 'dataMax',
+                },
+                {
+                    name: 'funding',
+                    type: 'value',
+                    nameLocation: 'end',
+                    min: 'dataMin',
+                    max: 'dataMax',
+                    offset:70,
+                }
+            ],
+            series: [{
+            //     name: 'spot',
+            //     type: 'line',
+            // },{
+            //     name: 'futher',
+            //     type: 'line',
+            // },{
+                name: 'diff',
+                type: 'line',
+                yAxisIndex: 1,
+                markLine: {
+                    data: []
+                },
+                markPoint: {
+                    data: []
+                }
+            },{
+                name: 'funding',
+                type: 'line',
+                yAxisIndex: 2,
+            }]
+        }
+        // option && myChart.setOption(option);
+        $(function(){
+            // symbol list
+            $.ajax({
+                type: 'GET',
+                url: 'https://fapi.binance.com/fapi/v1/premiumIndex',
+                data: {
+                },
+                success: function(data) {
+                    // console.log(data);
+                    data.sort(function(m,n){return n['lastFundingRate']-m['lastFundingRate'];});
+                    // 
+                    // [
+                    //     {
+                    //         "symbol": "BTCUSDT",                // 交易对
+                    //         "markPrice": "11793.63104562",  // 标记价格
+                    //         "indexPrice": "11781.80495970", // 指数价格
+                    //         "estimatedSettlePrice": "11781.16138815",  // 预估结算价,仅在交割开始前最后一小时有意义
+                    //         "lastFundingRate": "0.00038246",    // 最近更新的资金费率
+                    //         "nextFundingTime": 1597392000000,   // 下次资金费时间
+                    //         "interestRate": "0.00010000",       // 标的资产基础利率
+                    //         "time": 1597370495002               // 更新时间
+                    //     }
+                    // ]
+                    for(i in data) {
+                        if (Number(data[i]['lastFundingRate']) == 0) continue;
+                        $('.left ul').append('<li><span onclick="selectSymbol(\''+data[i]['symbol']+'\')">'+data[i]['symbol']+": "+(data[i]['lastFundingRate']*100).toFixed(3)+"</span></li>");
+                        // console.log(data[i]['symbol']+": "+data[i]['lastFundingRate']);
+                    }
+                },
+                dataType: 'json'
+            });
+        });
+
+        function selectSymbol(s) {
+            symbol = s;
+            watch();
+        }
+
+        function watch() {
+            option.title.text = symbol;
+            const socket_funding = new WebSocket('wss://fstream.binance.com/ws/'+symbol.toLowerCase()+'@markPrice');
+            // {
+            //     "e": "markPriceUpdate",     // 事件类型
+            //     "E": 1562305380000,         // 事件时间
+            //     "s": "BTCUSDT",             // 交易对
+            //     "p": "11794.15000000",      // 标记价格
+            //     "i": "11784.62659091",      // 现货指数价格
+            //     "P": "11784.25641265",      // 预估结算价,仅在结算前最后一小时有参考价值
+            //     "r": "0.00038167",          // 资金费率
+            //     "T": 1562306400000          // 下次资金时间
+            // }
+            // Listen for messages
+            socket_funding.addEventListener('message', function (event) {
+                // console.log(event.data);
+                var data = JSON.parse(event.data);
+                if (data_funding.length > 1800) {
+                    data_funding.shift();
+                }
+                data_funding.push([data['E'], Number((data['r']*100).toFixed(6))]);
+                option.series[1].data = data_funding;
+                myChart.setOption(option);
+            });
+
+            // wss://stream.binance.com:9443
+            // <symbol>@aggTrade
+            // {
+            //   "e": "aggTrade",  // 事件类型
+            //   "E": 123456789,   // 事件时间
+            //   "s": "BNBBTC",    // 交易对
+            //   "a": 12345,       // 归集交易ID
+            //   "p": "0.001",     // 成交价格
+            //   "q": "100",       // 成交笔数
+            //   "f": 100,         // 被归集的首个交易ID
+            //   "l": 105,         // 被归集的末次交易ID
+            //   "T": 123456785,   // 成交时间
+            //   "m": true,        // 买方是否是做市方。如true，则此次成交是一个主动卖出单，否则是一个主动买入单。
+            //   "M": true         // 请忽略该字段
+            // }
+            const socket_spot = new WebSocket('wss://stream.binance.com:9443/ws/'+symbol.toLowerCase()+'@aggTrade');
+            socket_spot.addEventListener('message', function (event) {
+                // console.log(event.data);
+                var data = JSON.parse(event.data);
+                if (data_spot.length > 100) {
+                    data_spot.shift();
+                }
+                if (data_spot.length>0 && ~~(data_spot[data_spot.length-1][0]/1000) == ~~(data['E']/1000)) {
+                    data_spot.pop();
+                }
+                data_spot.push([data['E'], data['p']]);
+                // option.series[0].data = data_spot;
+
+                // myChart.setOption(option);
+            });
+            
+            // wss://fstream.binance.com
+            // <symbol>@aggTrade
+            // {
+            // "e": "aggTrade",  // 事件类型
+            // "E": 123456789,   // 事件时间
+            // "s": "BNBUSDT",    // 交易对
+            // "a": 5933014,     // 归集成交 ID
+            // "p": "0.001",     // 成交价格
+            // "q": "100",       // 成交量
+            // "f": 100,         // 被归集的首个交易ID
+            // "l": 105,         // 被归集的末次交易ID
+            // "T": 123456785,   // 成交时间
+            // "m": true         // 买方是否是做市方。如true，则此次成交是一个主动卖出单，否则是一个主动买入单。
+            // }
+            var point_mark = false;
+            var point_switch = true;
+            const socket_futher = new WebSocket('wss://fstream.binance.com/ws/'+symbol.toLowerCase()+'@aggTrade');
+            socket_futher.addEventListener('message', function (event) {
+                // console.log(event.data);
+                var data = JSON.parse(event.data);
+                if (data_futher.length > 100) {
+                    data_futher.shift();
+                }
+                if (data_futher.length>0 && ~~(data_futher[data_futher.length-1][0]/1000) == ~~(data['E']/1000)) {
+                    data_futher.pop();
+                }
+                data_futher.push([data['E'], data['p']]);
+                // option.series[1].data = data_futher;
+
+                // diff
+                if (data_spot.length>0) {
+                    if (data_diff.length > 1800) {
+                        data_diff.shift();
+                    }
+                    var same = false;
+                    if (data_diff.length>0 && ~~(data_diff[data_diff.length-1][0]/10000) == ~~(data['E']/10000)) {
+                        data_diff.pop();
+                        same = true;
+                    }
+                    var diff = Number((data['p'] - data_spot[data_spot.length-1][1]).toFixed(10));
+                    if (diff < 0.01) diff = diff * 1000;
+                    data_diff.push([data['E'], diff])
+                    option.series[0].data = data_diff;
+
+                    // mark point
+                    if (point_switch) {
+                        // if (!same) {
+                            if (diff > diff_avg) {
+                                if (!point_mark) {
+                                    point_mark = true;
+                                } else {
+                                    data_diff_markpoint.push({
+                                        // name: data[j]['fundingRate'],
+                                        coord: [data['E'], diff],
+                                        value: String(diff),
+                                        itemStyle: {
+                                            color: '#336600'
+                                        }
+                                    });
+                                    option.series[0].markPoint.data = data_diff_markpoint;
+                                    point_mark = false;
+                                    point_switch = false;
+                                }
+                            } else {
+                                point_mark = false;
+                            }
+                        // }
+                    }
+                }
+
+                myChart.setOption(option);
+            });
+
+            // 0.0006*2=0.0012   0.00036=0.00072    = 0.00096
+            // 
+
+            // 0点、8点、16点前10分钟开始监控
+            // 获取费率大于0.2的
+            // 获取他们的前24小时平均差值（15m-100）
+            // 监听实时合约价格和现货价格，当差价大于平均值且在扩大时下单
+
+            // 在0点、8点、16点前30分钟监控
+            // 判断之前的单费率是否下降到0.18以下
+            // 是的话监控实时差价，当差价在开仓时的差价以下且在缩小时平仓
+
+            getFundingAvg();
+        }
+
+        function getFundingAvg() {
+            var tmp_spot = [];
+            var tmp_futher = [];
+            var interval = '1m';
+            var num = 300;
+            // spot
+            $.ajax({
+                async : false,
+                type: 'GET',
+                url: 'https://api.binance.com/api/v3/klines',
+                data: {
+                    symbol: symbol,
+                    interval: interval,
+                    limit: num,
+                },
+                success: function(data) {
+                    // console.log(data);
+                    for(i in data) {
+                        tmp_spot.push(Number(data[i][4]));
+                    }
+                    // diff
+                    // if (data_futher.length>0 && data_futher[0][0] == data_spot[0][0]) {
+                    //     for(i in data_futher) {
+                    //         data_diff.push([data_futher[i][0], (data_futher[i][1] - data_spot[i][1]).toFixed(3)])
+                    //     }
+                    //     option.series[2].data = data_diff;
+                    // }
+                },
+                dataType: 'json'
+            });
+            // futher
+            $.ajax({
+                async : false,
+                type: 'GET',
+                url: 'https://fapi.binance.com/fapi/v1/klines',
+                data: {
+                    symbol: symbol,
+                    interval: interval,
+                    limit: num,
+                },
+                success: function(data) {
+                    // console.log(data);
+                    for(i in data) {
+                        tmp_futher.push(Number(data[i][4]));
+                    }
+                    // diff
+                    if (tmp_spot.length <= 0) {
+                        console.log(tmp_spot);
+                        alert('err spot data');
+                        return;
+                    }
+                    if (tmp_futher[0][0] != tmp_spot[0][0]) {
+                        alert('err: spot time != futher time');
+                        return;
+                    }
+                    var tmp_sum = 0;
+                    for(i in tmp_futher) {
+                        tmp_sum+=Number((tmp_futher[i] - tmp_spot[i]).toFixed(10))
+                    }
+                    diff_avg = Number((tmp_sum / num).toFixed(10));
+                    if (diff_avg < 0.01) diff_avg = diff_avg * 1000;
+
+                    option.series[0].markLine.data = [
+                        {
+                            name: 'avg',
+                            yAxis: diff_avg
+                        }
+                    ];
+                    myChart.setOption(option);
+                },
+                dataType: 'json'
+            });
+
+            console.log('avg: ' + diff_avg);
+        }
+    </script>
+</body>
+</html>

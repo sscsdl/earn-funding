@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="/static/js/jquery.min.js" type="text/javascript"></script>
+    <script src="/static/js/echarts.min.js" type="text/javascript"></script>
+    <style>
+        .left{width: 200px;float: left;}
+        .right{width: 98%;padding-left: 200px;box-sizing: border-box;}
+    </style>
+</head>
+<body>
+    <div class="left">
+        <ul></ul>
+    </div>
+    <div class="right">
+        <a href="javascript:void(0);" onclick="selectPeriod('1m')">1m</a>
+        <a href="javascript:void(0);" onclick="selectPeriod('3m')">3m</a>
+        <a href="javascript:void(0);" onclick="selectPeriod('15m')">15m</a>
+        <a href="javascript:void(0);" onclick="selectPeriod('30m')">30m</a>
+        <a href="javascript:void(0);" onclick="selectPeriod('1h')">1h</a>
+        <a href="javascript:void(0);" onclick="selectPeriod('2h')">2h</a>
+        <a href="javascript:void(0);" onclick="selectPeriod('4h')">4h</a>
+        <a href="javascript:void(0);" onclick="selectPeriod('8h')">8h</a>
+        <a href="javascript:void(0);" onclick="selectPeriod('1d')">1d</a>
+        <div id="main" style="width: 100%;height:600px;"></div>
+    </div>
+    <script>
+        var symbol = null;
+        var interval = '1h';
+        var data_spot = [];
+        var data_futher = [];
+        var data_diff = [];
+        var data_funding_markpoint = [];
+        var data_funding = [];
+        var myChart = echarts.init(document.getElementById('main'));
+        var option;
+        option = {
+            title: {
+                text: '-'
+            },
+            legend: {
+                data: ['spot', 'futher', 'diff', 'funding']
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    label: {
+                        formatter: function (value, index) {
+                            var date = new Date(Number(value.value));
+                            return (date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+date.getMinutes();
+                        }
+                    }
+                }
+            },
+            xAxis: {
+                type: 'category',
+                // boundaryGap: false,
+                axisLabel: {
+                    formatter: function (value, index) {
+                        var date = new Date(Number(value));
+                        return (date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+date.getMinutes();
+                    }
+                },
+                min: 'dataMin',
+                max: 'dataMax',
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    min: 'dataMin',
+                    max: 'dataMax',
+                },
+                {
+                    name: 'diff',
+                    type: 'value',
+                    nameLocation: 'end',
+                    min: 'dataMin',
+                    max: 'dataMax',
+                },
+                {
+                    name: 'funding',
+                    type: 'value',
+                    nameLocation: 'end',
+                    min: 'dataMin',
+                    max: 'dataMax',
+                    offset:70,
+                }
+            ],
+            series: [{
+                name: 'spot',
+                type: 'line',
+                // showSymbol: false,
+                // hoverAnimation: false,
+                // data: data
+            },{
+                name: 'futher',
+                type: 'line',
+                // showSymbol: false,
+                // hoverAnimation: false,
+                // data: data,
+                // markLine: {
+                //     data: [
+                //         {type: 'average', name: '平均值'}
+                //     ]
+                // }
+            },{
+                name: 'diff',
+                yAxisIndex: 1,
+                type: 'line',
+                // showSymbol: false,
+                // hoverAnimation: false,
+                // data: [[1617754260000, "10"],[1617754320000, "11"]]
+                markLine: {
+                    data: [
+                        {type: 'average', name: '平均值'}
+                    ]
+                }
+            },{
+                name: 'funding',
+                yAxisIndex: 2,
+                type: 'line',
+                // showSymbol: false,
+                // hoverAnimation: false,
+                // data: [[1617754260000, "10"],[1617754320000, "11"]]
+                markPoint: {
+                    data: []
+                }
+            }]
+        };
+        function changePeriod() {
+            $('a').css({'text-decoration': 'none','color': '#333'});
+        }
+        function selectPeriod(i) {
+            interval = i;
+            if (symbol) {
+                getData();
+            }
+        }
+        function selectSymbol(s) {
+            symbol = s;
+            getData();
+        }
+        function getData() {
+            data_spot = [];
+            data_futher = [];
+            data_diff = [];
+            data_funding = [];
+            data_funding_markpoint = [];
+            option.series[3].markPoint.data = [];
+            for(i in option.series) {
+                option.series[i].data = [];
+                if (option.series[i].markPoint) {
+                    option.series[i].markPoint.data = [];
+                }
+            }
+            option.title.text = symbol+' - '+interval;
+            // spot
+            $.ajax({
+                type: 'GET',
+                url: 'https://api.binance.com/api/v3/klines',
+                data: {
+                    symbol: symbol,
+                    interval: interval,
+                    limit: '100',
+                },
+                success: function(data) {
+                    // console.log(data);
+                    for(i in data) {
+                        data_spot.push([data[i][0], Number(data[i][4])]);
+                    }
+                    // diff
+                    if (data_futher.length>0 && data_futher[0][0] == data_spot[0][0]) {
+                        for(i in data_futher) {
+                            var diff = data_futher[i][1] - data_spot[i][1];
+                            if (diff < 1) diff = diff * 1000;
+                            data_diff.push([data_futher[i][0], (diff).toFixed(10)])
+                        }
+                        option.series[2].data = data_diff;
+                    }
+                    option.series[0].data = data_spot;
+                    flash();
+                },
+                dataType: 'json'
+            });
+            // futher
+            $.ajax({
+                type: 'GET',
+                url: 'https://fapi.binance.com/fapi/v1/klines',
+                data: {
+                    symbol: symbol,
+                    interval: interval,
+                    limit: '100',
+                },
+                success: function(data) {
+                    // console.log(data);
+                    for(i in data) {
+                        data_futher.push([data[i][0], Number(data[i][4])]);
+                    }
+                    // diff
+                    if (data_spot.length>0 && data_futher[0][0] == data_spot[0][0]) {
+                        for(i in data_futher) {
+                            var diff = data_futher[i][1] - data_spot[i][1];
+                            if (diff < 1) diff = diff * 1000;
+                            data_diff.push([data_futher[i][0], (diff).toFixed(10)])
+                        }
+                        option.series[2].data = data_diff;
+                    }
+                    option.series[1].data = data_futher;
+                    getFunding();
+                },
+                dataType: 'json'
+            });
+        }
+        function getFunding() {
+            $.ajax({
+                type: 'GET',
+                url: 'https://fapi.binance.com/fapi/v1/fundingRate',
+                data: {
+                    symbol: symbol,
+                    limit: '100',
+                },
+                success: function(data) {
+                    // console.log(data);
+                    for(i in data_spot) {
+                        for(j in data) {
+                            // if (data[j]['fundingTime'] > data_futher[i][0]) break;
+                            if (~~(data_spot[i][0]/1000) == ~~(data[j]['fundingTime']/1000)) {
+                                // funding line
+                                data_funding.push([data_spot[i][0], (data[j]['fundingRate']*100).toFixed(4)]);
+                                var date = new Date(Number(data[j]['fundingTime']));
+
+                                // funding markpoint
+                                data_funding_markpoint.push({
+                                    // name: data[j]['fundingRate'],
+                                    coord: [Number(i), (data[j]['fundingRate']*100).toFixed(2)],
+                                    value: (data[j]['fundingRate']*100).toFixed(4),
+                                    itemStyle: {
+                                        color: '#336600'
+                                    }
+                                });
+                                break;
+                            }
+                        }
+                    }
+                    option.series[3].data = data_funding;
+                    option.series[3].markPoint.data = data_funding_markpoint;
+                    flash();
+                },
+                dataType: 'json'
+            });
+        }
+        function flash() {
+            if (data_spot.length>0 && data_futher.length>0) {
+                myChart.setOption(option, true);
+            }
+        }
+        var data_tmp = [];
+        $(function(){
+            // symbol list
+            $.ajax({
+                type: 'GET',
+                url: 'https://fapi.binance.com/fapi/v1/premiumIndex',
+                data: {
+                },
+                success: function(data) {
+                    // console.log(data);
+                    data.sort(function(m,n){return n['lastFundingRate']-m['lastFundingRate'];});
+                    // 
+                    // [
+                    //     {
+                    //         "symbol": "BTCUSDT",                // 交易对
+                    //         "markPrice": "11793.63104562",  // 标记价格
+                    //         "indexPrice": "11781.80495970", // 指数价格
+                    //         "estimatedSettlePrice": "11781.16138815",  // 预估结算价,仅在交割开始前最后一小时有意义
+                    //         "lastFundingRate": "0.00038246",    // 最近更新的资金费率
+                    //         "nextFundingTime": 1597392000000,   // 下次资金费时间
+                    //         "interestRate": "0.00010000",       // 标的资产基础利率
+                    //         "time": 1597370495002               // 更新时间
+                    //     }
+                    // ]
+                    for(i in data) {
+                        if (Number(data[i]['lastFundingRate']) == 0) continue;
+                        $('.left ul').append('<li><span onclick="selectSymbol(\''+data[i]['symbol']+'\')">'+data[i]['symbol']+": "+(data[i]['lastFundingRate']*100).toFixed(2)+"</span></li>");
+                        // console.log(data[i]['symbol']+": "+data[i]['lastFundingRate']);
+                    }
+                },
+                dataType: 'json'
+            });
+        });
+
+    </script>
+</body>
+</html>
