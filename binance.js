@@ -752,13 +752,9 @@ binance.prototype.getFundingDiffAvg = async function (symbol,timestamp) {
 // }
 binance.prototype.watchSpotPrice = function (symbol, callback) {
     var bin = this;
-    var tunnelingAgent = tunnel.httpsOverHttp({
-        proxy: this.proxy
-    });
+    var tunnelingAgent = this.proxy ? tunnel.httpsOverHttp({proxy: this.proxy}) : null
 
-    var ws = new WebSocket(this.spotWSUrl+symbol.toLowerCase()+'@aggTrade', {
-        agent: tunnelingAgent
-    });
+    var ws = new WebSocket(this.spotWSUrl+symbol.toLowerCase()+'@aggTrade', {agent: tunnelingAgent});
 
     ws.on('message', function incoming(data) {
         // console.log(data);
@@ -795,13 +791,9 @@ binance.prototype.watchSpotPrice = function (symbol, callback) {
 // }
 binance.prototype.watchFuturesPrice = function (symbol, callback) {
     var bin = this;
-    var tunnelingAgent = tunnel.httpsOverHttp({
-        proxy: this.proxy
-    });
+    var tunnelingAgent = this.proxy ? tunnel.httpsOverHttp({proxy: this.proxy}) : null
 
-    var ws = new WebSocket(this.futuresWSUrl+symbol.toLowerCase()+'@aggTrade', {
-        agent: tunnelingAgent
-    });
+    var ws = new WebSocket(this.futuresWSUrl+symbol.toLowerCase()+'@aggTrade', {agent: tunnelingAgent});
 
     ws.on('message', function incoming(data) {
         // console.log(data);
