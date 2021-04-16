@@ -845,7 +845,7 @@ binance.prototype.get = async function (url, data, signature) {
                 'X-MBX-APIKEY': this.apiKey,
             }, 
             // form: data,
-            proxy: this.proxy ? this.proxy.scheme + '://' + this.proxy.host + ':' + this.proxy.port : {},
+            proxy: this.proxy ? this.proxy.scheme + '://' + this.proxy.host + ':' + this.proxy.port : null,
         }, (error, response, body) => {
             if (error) reject(error)
             if (response.statusCode != 200) {
@@ -888,7 +888,7 @@ binance.prototype.post = async function (url, data) {
             }, 
             form: data,
             // json: true,
-            proxy: this.proxy.scheme + '://' + this.proxy.host + ':' + this.proxy.port,
+            proxy: this.proxy ? this.proxy.scheme + '://' + this.proxy.host + ':' + this.proxy.port : null,
         }, (error, response, body) => {
             if (error) reject(error);
             if (response.statusCode != 200) {
