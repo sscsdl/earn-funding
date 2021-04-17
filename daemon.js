@@ -14,6 +14,8 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
     var symbol = null;
     var buySpotQuantity = null;
     var buyFuturesQuantity = null;
+    var buySpotPrice = null;
+    var buyFuturesPrice = null;
     var sellSpotQuantity = null;
     var sellFuturesQuantity = null;
 
@@ -31,10 +33,10 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
     var phase = account.getPhase(); 
 
     // var phase = 5;
-    // var symbol = 'HBARUSDT';
-    // var buySpotQuantity = buyFuturesQuantity = 210;
-    // var sellSpotQuantity = 210;
-    // var sellFuturesQuantity = 210;
+    // var symbol = 'CHZUSDT';
+    // var buySpotQuantity = buyFuturesQuantity = 20;
+    // var buySpotPrice = 0;
+    // var sellSpotQuantity = sellFuturesQuantity = 20;
     // var diffAvg = 0.0015959;
 
     // var spotOrderId = '20210415231506';
@@ -42,15 +44,15 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
 
     // var spotOrderId = sd.format(new Date(getTimestamp()), 'YYYYMMDDHHmmss');
     // console.log(spotOrderId);
-    // var spotBuyRes = await binance.spotBuy(symbol,spotOrderId,null,quantity,getTimestamp());
+    // var spotBuyRes = await binance.spotBuy(symbol,spotOrderId,null,buySpotQuantity,getTimestamp());
     // console.log(spotBuyRes);
 
     // var spotCloseOrderId = sd.format(new Date(getTimestamp()), 'YYYYMMDDHHmmss');
     // console.log(spotCloseOrderId);
-    // var res = await binance.spotSell(symbol,spotCloseOrderId,null,quantity,getTimestamp());
+    // var res = await binance.spotSell(symbol,spotCloseOrderId,null,sellSpotQuantity,getTimestamp());
     // console.log(res);
 
-    // spotCloseOrderId = '20210415231506';
+    // spotCloseOrderId = '20210417075633833358';
     // res = await binance.getSpotOrder(symbol, spotCloseOrderId, getTimestamp()).catch(err => {
     //     if (err.body.code == -2013) { // 未下单
     //         return;
@@ -60,6 +62,8 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
     //     process.exit(1);
     // }
     // console.log(res);
+    // console.log(util.precision(res.cummulativeQuoteQty / res.executedQty, 6));
+    // process.exit(1);
 
     // var futuresOrderId = sd.format(new Date(getTimestamp()), 'YYYYMMDDHHmmss');
     // var futuresCloseOrderId = sd.format(new Date(getTimestamp()), 'YYYYMMDDHHmmss');
@@ -68,7 +72,7 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
     // console.log(res);
     // var res = await binance.futuresShort(symbol,futuresOrderId,null,quantity,getTimestamp());
     // console.log(res);
-    // futuresCloseOrderId = '20210415225110';
+    // futuresCloseOrderId = '20210417075633171170';
     // res = await binance.getFuturesOrder(symbol, futuresCloseOrderId, getTimestamp()).catch(err => {
     //     if (err.body.code == -2013) { // 未下单
     //         return;
@@ -78,6 +82,9 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
     //     process.exit(1);
     // }
     // console.log(res);
+    // console.log(Number(res.avgPrice));
+    // process.exit(1);
+
     // res = await binance.futuresShortClose(symbol,futuresCloseOrderId,null,quantity,getTimestamp());
     // console.log(res);
     // res = await binance.getFuturesOrder(symbol, futuresCloseOrderId, getTimestamp()).catch(err => {
@@ -161,6 +168,7 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
                 }
                 
                 buySpotQuantity = buyFuturesQuantity = quantity;
+                sellSpotQuantity = sellFuturesQuantity = quantity
 
                 phase = 2;
                 break;
@@ -250,8 +258,10 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
                 console.log(res);
                 process.exit(1);
             }
-            console.log('spot order', spotOrderId, res.price, res.executedQty, res.cummulativeQuoteQty);
-            spotSellQuantity = Number(res.executedQty)
+            console.log('spot order');
+            console.log(res);
+            buySpotPrice = util.precision(res.cummulativeQuoteQty / res.executedQty, 6);
+            console.log('buySpotPrice', buySpotPrice);
             
             var res = await binance.getFuturesOrder(symbol, futuresOrderId, getTimestamp()).catch(err => {
                 if (err.body.code == -2013) { // 未下单
@@ -266,10 +276,21 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
                 console.log(res);
                 process.exit(1);
             }
-            console.log('futures order', spotOrderId, res.avgPrice, res.executedQty, res.cumQuote);
-            sellFuturesQuantity = Number(res.executedQty)
+            console.log('futures order');
+            console.log(res);
+            buyFuturesPrice = Number(res.avgPrice)
+            console.log('buyFuturesPrice', buyFuturesPrice);
 
             console.log('order complete');
+            
+            if (!buySpotPrice) {
+                console.log('err buySpotPrice');
+                process.exit(1);
+            }
+            if (!buyFuturesPrice) {
+                console.log('err buyFuturesPrice');
+                process.exit(1);
+            }
 
             phase = 5;
         } else if (phase == 5) { // 等待平仓
@@ -277,10 +298,10 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
             // 开始前的30-15分钟
             let hours = new Date(getTimestamp()).getHours();
             let minutes = new Date(getTimestamp()).getMinutes();
-            if (!((hours >= 23 || 
+            if (!(hours >= 23 || 
                 (hours >= 7 && hours < 8) ||
-                (hours >= 15 && hours < 16)) && 
-                minutes >= 30 && minutes < 45)
+                (hours >= 15 && hours < 16))// && 
+                // minutes >= 30 && minutes < 45
             ) {
                 console.log('waiting close');
                 await snooze(60000);
@@ -305,27 +326,6 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
             }
 
             // 已经低费率了 卖出和平仓
-            
-            // 整理精度
-            sellSpotQuantity = await binance.spotQuantityPrecision(symbol, sellSpotQuantity);
-            console.log('sellSpotQuantity', sellSpotQuantity);
-            if (!sellSpotQuantity) {
-                console.log('err sellSpotQuantity=0');
-                process.exit(1);
-            }
-            sellFuturesQuantity = await binance.futuresQuantityPrecision(symbol, sellFuturesQuantity);
-            console.log('sellFuturesQuantity', sellFuturesQuantity);
-            if (!sellFuturesQuantity) {
-                console.log('err sellFuturesQuantity=0');
-                process.exit(1);
-            }
-            
-            // 检查规则
-            let res = await binance.checkSpotFilter(symbol, list[index]['markPrice'], sellSpotQuantity);
-            if (res !== true) {
-                console.log(res);
-                process.exit(1);
-            }
 
             var spotCloseOrderId = util.randomNumber();
             var futuresCloseOrderId = util.randomNumber();
@@ -341,14 +341,23 @@ const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
                 if (binance.dataSpot.length<=0) return;
                 
                 // 检查如果价格大于平均价2次就下单
-                var diff = util.precision(binance.dataFutures[binance.dataFutures.length-1][1] - binance.dataSpot[binance.dataSpot.length-1][1],10);
-                if (diff < diffAvg) {
+                // var diff = util.precision(binance.dataFutures[binance.dataFutures.length-1][1] - binance.dataSpot[binance.dataSpot.length-1][1],10);
+                let spotDiff = binance.dataSpot[binance.dataSpot.length-1][1] - buySpotPrice;
+                let futuresDiff = binance.dataFutures[binance.dataFutures.length-1] - buyFuturesPrice
+                if ((spotDiff > 0 && futuresDiff < 0) ||
+                    (spotDiff > 0 && futuresDiff > 0 && spotDiff > futuresDiff * -1) ||
+                    // (spotDiff < 0 && futuresDiff > 0) ||
+                    (spotDiff < 0 && futuresDiff < 0 && spotDiff * -1 > futuresDiff)) {
+
+                    // }
+                // if (buyFuturesPrice - binance.dataFutures[binance.dataFutures.length-1] > binance.dataSpot[binance.dataSpot.length-1][1] - buySpotPrice)
+                // if (diff < diffAvg) {
                     if (!ltAvgPrice) {
                         ltAvgPrice = true;
                     } else {
                         ltAvgPrice = false;
                         watching = false;
-                        console.log('sell', binance.dataFutures[binance.dataFutures.length-1][1], diffAvg, '>', diff);
+                        console.log('sell', binance.dataSpot[binance.dataSpot.length-1][1], buySpotPrice, binance.dataFutures[binance.dataFutures.length-1][1], buyFuturesPrice);
                         // 生成订单
                         spotOrderId = util.randomNumber();
                         futuresOrderId = util.randomNumber();
