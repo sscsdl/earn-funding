@@ -9,7 +9,6 @@ function setTimeDateFmt(s) {  // 个位数补齐十位数
  * @public
  */
 module.exports = {
-
     randomNumber: () => {
         const now = new Date()
         let month = now.getMonth() + 1

@@ -1,9 +1,11 @@
 const sd = require('silly-datetime');
-const binance = require('./binance');
+const Binance = require('./binance');
 const account = require('./account');
 const utils = require('./utils')
 
 const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
+const binance = new Binance(account.getBinanceInfo('apiKey'), account.getBinanceInfo('secretKey'));
+
 
 (async () => {
     var spotOrderId = null;

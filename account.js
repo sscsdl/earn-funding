@@ -18,4 +18,16 @@ account.prototype.getTradeAmount = function() {
     return 80;
 }
 
+account.prototype.getBinanceInfo = k => {
+    const info = {
+        apiKey: '',
+        secretKey: '',
+    };
+    if (k) {
+        return info[k];
+    }
+
+    return info;
+}
+
 module.exports = account();

@@ -8,10 +8,7 @@ const WebSocket = require('ws');
 const tunnel = require('tunnel');
 const utils = require('./utils')
 
-function binance (req) {
-    if (!(this instanceof binance)) {
-        return new binance(req)
-    }
+function Binance (apiKey, secretKey) {
 
     this.spotUrl = 'https://api.binance.com';
     this.spotWSUrl = 'wss://stream.binance.com:9443/ws/';
@@ -19,8 +16,8 @@ function binance (req) {
     this.futuresWSUrl = 'wss://fstream.binance.com/ws/';
     this.deliveryUrl = 'https://dapi.binance.com';
     this.deliveryWSUrl = 'wss://dstream.binance.com/ws/';
-    this.apiKey = '';
-    this.secretKey = '';
+    this.apiKey = apiKey;
+    this.secretKey = secretKey;
 
     this.proxy = null;
     let match;
@@ -44,7 +41,7 @@ function binance (req) {
     this.getFuturesExchangeInfoAlready = false;
 }
 
-binance.prototype.getTime = async function() {
+Binance.prototype.getTime = async function() {
     let url = this.spotUrl + '/api/v3/time';
     let data = await this.get(url);
     return new Date(data.serverTime);
@@ -63,7 +60,7 @@ binance.prototype.getTime = async function() {
 //         "time": 1597370495002                // 更新时间
 //     }
 // ]
-binance.prototype.getHighFundingFuturesList = async function(least) {
+Binance.prototype.getHighFundingFuturesList = async function(least) {
     let url = this.futuresUrl + '/fapi/v1/premiumIndex';
     let data = await this.get(url);
     data.sort(function(m,n){return n['lastFundingRate']-m['lastFundingRate'];});
@@ -95,7 +92,7 @@ binance.prototype.getHighFundingFuturesList = async function(least) {
 //       { asset: 'ETH', free: '0.04715000', locked: '0.00000000' },
 //     ]
 // }
-binance.prototype.getSpotBalance = async function(asset, timestamp) {
+Binance.prototype.getSpotBalance = async function(asset, timestamp) {
     let url = this.spotUrl + '/api/v3/account';
     let data = await this.get(url, {
         timestamp: timestamp,
@@ -106,7 +103,7 @@ binance.prototype.getSpotBalance = async function(asset, timestamp) {
     return 0;
 }
 
-binance.prototype.transfer = async function(type, asset, amount, timestamp) {
+Binance.prototype.transfer = async function(type, asset, amount, timestamp) {
     let url = this.spotUrl + '/sapi/v1/asset/transfer';
     let data = await this.post(url, {
         // MAIN_C2C 现货钱包转向C2C钱包
@@ -199,7 +196,7 @@ binance.prototype.transfer = async function(type, asset, amount, timestamp) {
 //         }
 //     ]
 // }
-binance.prototype.getSpotExchangeInfo = async function() {
+Binance.prototype.getSpotExchangeInfo = async function() {
     let url = this.spotUrl + '/api/v3/exchangeInfo';
     let data = await this.get(url);
     for (let i = 0; i < data['symbols'].length; i++) {
@@ -209,7 +206,7 @@ binance.prototype.getSpotExchangeInfo = async function() {
     return this.spotExchangeInfo;
 }
 
-binance.prototype.checkSpotFilter = async function(symbol, price, count) {
+Binance.prototype.checkSpotFilter = async function(symbol, price, count) {
     if (!this.getSpotExchangeInfoAlready) {
         await this.getSpotExchangeInfo();
     }
@@ -337,7 +334,7 @@ binance.prototype.checkSpotFilter = async function(symbol, price, count) {
 //     ],
 //     "timezone": "UTC" // 服务器所用的时间区域
 // }
-binance.prototype.getFuturesExchangeInfo = async function() {
+Binance.prototype.getFuturesExchangeInfo = async function() {
     let url = this.futuresUrl + '/fapi/v1/exchangeInfo';
     let data = await this.get(url);
     for (let i = 0; i < data['symbols'].length; i++) {
@@ -347,7 +344,7 @@ binance.prototype.getFuturesExchangeInfo = async function() {
     return this.futuresExchangeInfo;
 }
 
-binance.prototype.checkSpotFilter = async function(symbol, price, count) {
+Binance.prototype.checkSpotFilter = async function(symbol, price, count) {
     if (!this.getFuturesExchangeInfoAlready) {
         await this.getFuturesExchangeInfo();
     }
@@ -382,7 +379,7 @@ binance.prototype.checkSpotFilter = async function(symbol, price, count) {
 }
 
 // quantity
-binance.prototype.spotQuantityPrecision = async function(symbol, quantity) {
+Binance.prototype.spotQuantityPrecision = async function(symbol, quantity) {
     if (!this.getSpotExchangeInfoAlready) {
         await this.getSpotExchangeInfo();
     }
@@ -415,7 +412,7 @@ binance.prototype.spotQuantityPrecision = async function(symbol, quantity) {
 }
 
 // quantity
-binance.prototype.futuresQuantityPrecision = async function(symbol, quantity) {
+Binance.prototype.futuresQuantityPrecision = async function(symbol, quantity) {
     if (!this.getFuturesExchangeInfoAlready) {
         await this.getFuturesExchangeInfo();
     }
@@ -435,7 +432,7 @@ binance.prototype.futuresQuantityPrecision = async function(symbol, quantity) {
 //   orderListId: -1,
 //   clientOrderId: '20210415231506',
 //   transactTime: 1618499707305 }
-binance.prototype.spotBuy = async function(symbol,orderId,price,quantity,timestamp) {
+Binance.prototype.spotBuy = async function(symbol,orderId,price,quantity,timestamp) {
     // let url = this.spotUrl + '/api/v3/order/test';
     let url = this.spotUrl + '/api/v3/order';
     let option = {
@@ -478,7 +475,7 @@ binance.prototype.spotBuy = async function(symbol,orderId,price,quantity,timesta
 //   orderListId: -1,
 //   clientOrderId: '20210415231507',
 //   transactTime: 1618499708081 }
-binance.prototype.spotSell = async function(symbol,orderId,price,quantity,timestamp) {
+Binance.prototype.spotSell = async function(symbol,orderId,price,quantity,timestamp) {
     // let url = this.spotUrl + '/api/v3/order/test';
     let url = this.spotUrl + '/api/v3/order';
     let option = {
@@ -534,7 +531,7 @@ binance.prototype.spotSell = async function(symbol,orderId,price,quantity,timest
 //   updateTime: 1618499707305,
 //   isWorking: true,
 //   origQuoteOrderQty: '0.00000000' }
-binance.prototype.getSpotOrder = async function(symbol,orderId,timestamp) {
+Binance.prototype.getSpotOrder = async function(symbol,orderId,timestamp) {
     var data = await this.get(this.spotUrl + '/api/v3/order', {
         // symbol	STRING	YES	
         symbol: symbol,
@@ -548,7 +545,7 @@ binance.prototype.getSpotOrder = async function(symbol,orderId,timestamp) {
     return data;
 }
 
-binance.prototype.futuresLeverage = async function(symbol,leverage,timestamp) {
+Binance.prototype.futuresLeverage = async function(symbol,leverage,timestamp) {
     let url = this.futuresUrl + '/fapi/v1/leverage';
     let option = {
         // symbol	STRING	YES	交易对
@@ -590,7 +587,7 @@ binance.prototype.futuresLeverage = async function(symbol,leverage,timestamp) {
 //     priceProtect: false,
 //     origType: 'MARKET', 
 //     updateTime: 1618498270832 }     
-binance.prototype.futuresShort = async function(symbol,orderId,price,quantity,timestamp) {
+Binance.prototype.futuresShort = async function(symbol,orderId,price,quantity,timestamp) {
     // let url = this.futuresUrl + '/fapi/v1/order/test';
     let url = this.futuresUrl + '/fapi/v1/order';
     let option = {
@@ -633,7 +630,7 @@ binance.prototype.futuresShort = async function(symbol,orderId,price,quantity,ti
     return data;
 }
 
-binance.prototype.futuresShortClose = async function(symbol,orderId,price,quantity,timestamp) {
+Binance.prototype.futuresShortClose = async function(symbol,orderId,price,quantity,timestamp) {
     // let url = this.futuresUrl + '/fapi/v1/order/test';
     let url = this.futuresUrl + '/fapi/v1/order';
     let option = {
@@ -678,7 +675,7 @@ binance.prototype.futuresShortClose = async function(symbol,orderId,price,quanti
     return data;
 }
 
-binance.prototype.getFuturesOrder = async function(symbol,orderId,timestamp) {
+Binance.prototype.getFuturesOrder = async function(symbol,orderId,timestamp) {
     var data = await this.get(this.futuresUrl + '/fapi/v1/order', {
         // symbol	STRING	YES	
         symbol: symbol,
@@ -692,7 +689,7 @@ binance.prototype.getFuturesOrder = async function(symbol,orderId,timestamp) {
     return data;
 }
 
-binance.prototype.getFundingDiffAvg = async function (symbol,timestamp) {
+Binance.prototype.getFundingDiffAvg = async function (symbol,timestamp) {
     var tmp_spot = [];
     var tmp_futures = [];
     var interval = '1m';
@@ -750,7 +747,7 @@ binance.prototype.getFundingDiffAvg = async function (symbol,timestamp) {
 //   "m": true,        // 买方是否是做市方。如true，则此次成交是一个主动卖出单，否则是一个主动买入单。
 //   "M": true         // 请忽略该字段
 // }
-binance.prototype.watchSpotPrice = function (symbol, callback) {
+Binance.prototype.watchSpotPrice = function (symbol, callback) {
     var bin = this;
     var tunnelingAgent = this.proxy ? tunnel.httpsOverHttp({proxy: this.proxy}) : null
 
@@ -789,7 +786,7 @@ binance.prototype.watchSpotPrice = function (symbol, callback) {
 // "T": 123456785,   // 成交时间
 // "m": true         // 买方是否是做市方。如true，则此次成交是一个主动卖出单，否则是一个主动买入单。
 // }
-binance.prototype.watchFuturesPrice = function (symbol, callback) {
+Binance.prototype.watchFuturesPrice = function (symbol, callback) {
     var bin = this;
     var tunnelingAgent = this.proxy ? tunnel.httpsOverHttp({proxy: this.proxy}) : null
 
@@ -816,11 +813,11 @@ binance.prototype.watchFuturesPrice = function (symbol, callback) {
     return ws;
 }
 
-// binance.prototype.stopWatchFuturesPrice = function (symbol, ws) {
+// Binance.prototype.stopWatchFuturesPrice = function (symbol, ws) {
 //     ws.send('{"method": "UNSUBSCRIBE","params":["'+symbol.toLowerCase()+'@aggTrade"],"id": 1}}');
 // }
 
-binance.prototype.get = function (url, data, signature) {
+Binance.prototype.get = function (url, data, signature) {
     if (signature) {
         data['signature'] = crypto
             .createHmac('sha256', this.secretKey)
@@ -859,14 +856,14 @@ binance.prototype.get = function (url, data, signature) {
         }, 10000);
     });
 }
-binance.prototype.makeQueryString = q =>
+Binance.prototype.makeQueryString = q =>
   q
     ? `?${Object.keys(q)
         .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(q[k])}`)
         .join('&')}`
     : '';
 
-binance.prototype.post = function (url, data) {
+Binance.prototype.post = function (url, data) {
     data['signature'] = crypto
         .createHmac('sha256', this.secretKey)
         .update(this.makeQueryString(data).substr(1))
@@ -907,4 +904,4 @@ binance.prototype.post = function (url, data) {
  * Module exports.
  * @public
  */
-module.exports = binance();
+module.exports = Binance;
