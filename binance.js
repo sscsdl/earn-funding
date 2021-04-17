@@ -6,7 +6,7 @@ const request = require('request');
 const crypto = require('crypto');
 const WebSocket = require('ws');
 const tunnel = require('tunnel');
-const util = require('./util')
+const utils = require('./utils')
 
 function binance (req) {
     if (!(this instanceof binance)) {
@@ -57,8 +57,8 @@ binance.prototype.getTime = async function() {
 //         "markPrice": "11793.63104562",       // 标记价格
 //         "indexPrice": "11781.80495970",      // 指数价格
 //         "estimatedSettlePrice": "11781.16138815",  // 预估结算价,仅在交割开始前最后一小时有意义
-//         "lastFundingRate": "0.00038246",     // 最近更新的资金费率
-//         "nextFundingTime": 1597392000000,    // 下次资金费时间
+//         "lastFundingRate": "0.00038246",     // 最近更新的费率
+//         "nextFundingTime": 1597392000000,    // 下次费时间
 //         "interestRate": "0.00010000",        // 标的资产基础利率
 //         "time": 1597370495002                // 更新时间
 //     }
@@ -71,7 +71,7 @@ binance.prototype.getHighFundingFuturesList = async function(least) {
         let index = 0;
         for(var i in data) {
             index = i;
-            // console.log(index, Number(data[i]['lastFundingRate']));
+            // utils.log(index, Number(data[i]['lastFundingRate']));
             if (Number(data[i]['lastFundingRate']) < least) break;
         }
         return data.slice(0, index);
@@ -217,10 +217,10 @@ binance.prototype.checkSpotFilter = async function(symbol, price, count) {
     if (!item) return {status: false, msg: 'no spotExchangeInfo', symbol: symbol, price: price, count: count}
 
     for (let j = 0; j < item['filters'].length; j++) {
-        // console.log(item['filters'][j]['filterType']);
+        // utils.log(item['filters'][j]['filterType']);
         switch (item['filters'][j]['filterType']) {
             case 'MIN_NOTIONAL':
-                // console.log(item['filters'][j]['filterType'], price, count, item['filters'][j]['minNotional']);
+                // utils.log(item['filters'][j]['filterType'], price, count, item['filters'][j]['minNotional']);
                 // 过滤器定义了交易对订单所允许的最小名义价值(成交额)。 订单的名义价值是价格*数量。 由于MARKET订单没有价格，因此会使用 mark price 计算。
                 if (price * count < item['filters'][j]['minNotional']) {
                     return {status: false, data: item['filters'][j], price: price, count: count};
@@ -354,12 +354,12 @@ binance.prototype.checkSpotFilter = async function(symbol, price, count) {
     let item = this.futuresExchangeInfo.get(symbol);
     if (!item) return {status: false, msg: 'no futuresExchangeInfo', symbol: symbol, price: price, count: count}
 
-    console.log(item);
+    utils.log(item);
     for (let j = 0; j < item['filters'].length; j++) {
-        // console.log(item['filters'][j]['filterType']);
+        // utils.log(item['filters'][j]['filterType']);
         switch (item['filters'][j]['filterType']) {
             case 'MIN_NOTIONAL':
-                // console.log(item['filters'][j]['filterType'], price, count, item['filters'][j]['minNotional']);
+                // utils.log(item['filters'][j]['filterType'], price, count, item['filters'][j]['minNotional']);
                 // 过滤器定义了交易对订单所允许的最小名义价值(成交额)。 订单的名义价值是价格*数量。 由于MARKET订单没有价格，因此会使用 mark price 计算。
                 if (price * count < item['filters'][j]['minNotional']) {
                     return {status: false, data: item['filters'][j], price: price, count: count};
@@ -390,20 +390,20 @@ binance.prototype.spotQuantityPrecision = async function(symbol, quantity) {
     let item = this.spotExchangeInfo.get(symbol);
     if (!item) return {status: false, msg: 'no spotExchangeInfo', symbol: symbol, quantity: quantity}
 
-    // console.log(item);
+    // utils.log(item);
     // process.exit(1);
-    quantity = util.precision(quantity, item['quotePrecision']);
-    console.log('quantity', quantity);
+    quantity = utils.precision(quantity, item['quotePrecision']);
+    utils.log('quantity', quantity);
 
     for (let j = 0; j < item['filters'].length; j++) {
         switch (item['filters'][j]['filterType']) {
             case 'LOT_SIZE':
-                // console.log(item['filters'][j]['stepSize']);
+                // utils.log(item['filters'][j]['stepSize']);
                 let tmp = String(Number(item['filters'][j]['stepSize'])).split(".");
                 if (tmp.length != 2) {
-                    quantity = util.precision(quantity, 0);
+                    quantity = utils.precision(quantity, 0);
                 } else {
-                    quantity = util.precision(quantity, tmp[1].length);
+                    quantity = utils.precision(quantity, tmp[1].length);
                 }
                 break;
             default:
@@ -423,9 +423,9 @@ binance.prototype.futuresQuantityPrecision = async function(symbol, quantity) {
     let item = this.futuresExchangeInfo.get(symbol);
     if (!item) return {status: false, msg: 'no futuresExchangeInfo', symbol: symbol, quantity: quantity}
 
-    // console.log(item);
+    // utils.log(item);
     // process.exit(1);
-    quantity = util.precision(quantity, item['quantityPrecision']);
+    quantity = utils.precision(quantity, item['quantityPrecision']);
 
     return quantity;
 }
@@ -469,7 +469,7 @@ binance.prototype.spotBuy = async function(symbol,orderId,price,quantity,timesta
     if (price) {
         option.price = price;
     }
-    let data = await this.post(url, option).catch (error => console.log('err', error));
+    let data = await this.post(url, option).catch (error => utils.log('err', error));
     return data;
 }
 
@@ -512,7 +512,7 @@ binance.prototype.spotSell = async function(symbol,orderId,price,quantity,timest
     if (price) {
         option.price = price;
     }
-    let data = await this.post(url, option).catch (error => console.log('err', error));
+    let data = await this.post(url, option).catch (error => utils.log('err', error));
     return data;
 }
 
@@ -559,7 +559,7 @@ binance.prototype.futuresLeverage = async function(symbol,leverage,timestamp) {
         // timestamp	LONG	YES
         timestamp: timestamp,//new Date().getTime(),
     };
-    let data = await this.post(url, option).catch (error => console.log('err', error));
+    let data = await this.post(url, option).catch (error => utils.log('err', error));
     return data;
 }
 
@@ -629,7 +629,7 @@ binance.prototype.futuresShort = async function(symbol,orderId,price,quantity,ti
     if (price) {
         option.price = price;
     }
-    let data = await this.post(url, option).catch (error => console.log('err', error));
+    let data = await this.post(url, option).catch (error => utils.log('err', error));
     return data;
 }
 
@@ -674,7 +674,7 @@ binance.prototype.futuresShortClose = async function(symbol,orderId,price,quanti
     if (price !== null) {
         option.price = price;
     }
-    let data = await this.post(url, option).catch (error => console.log('err', error));
+    let data = await this.post(url, option).catch (error => utils.log('err', error));
     return data;
 }
 
@@ -703,10 +703,10 @@ binance.prototype.getFundingDiffAvg = async function (symbol,timestamp) {
         interval: interval,
         limit: num
     }).catch(error => {
-        console.log(error);
+        utils.log(error);
     });
     if (!data || data.length <= 0) {
-        console.log('err spot data', tmp_spot);
+        utils.log('err spot data', tmp_spot);
         return null;
     }
     for(let i in data) {
@@ -725,14 +725,14 @@ binance.prototype.getFundingDiffAvg = async function (symbol,timestamp) {
 
     // diff
     if (tmp_futures[0][0] != tmp_spot[0][0]) {
-        console.log('err: spot time != futures time');
+        utils.log('err: spot time != futures time');
         return;
     }
     var tmp_sum = 0;
     for(let i in tmp_futures) {
-        tmp_sum+=util.precision(tmp_futures[i] - tmp_spot[i], 10)
+        tmp_sum+=utils.precision(tmp_futures[i] - tmp_spot[i], 10)
     }
-    var diff_avg = util.precision(tmp_sum / num, 10);
+    var diff_avg = utils.precision(tmp_sum / num, 10);
     // if (diff_avg < 0.01) diff_avg = diff_avg * 1000;
     return diff_avg;
 }
@@ -757,10 +757,10 @@ binance.prototype.watchSpotPrice = function (symbol, callback) {
     var ws = new WebSocket(this.spotWSUrl+symbol.toLowerCase()+'@aggTrade', {agent: tunnelingAgent});
 
     ws.on('message', function incoming(data) {
-        // console.log(data);
+        // utils.log(data);
         var data = JSON.parse(data);
         if (data['e'] != 'aggTrade') {
-            console.log(data);
+            utils.log(data);
             return;
         }
         if (bin.dataSpot.length > 100) {
@@ -770,7 +770,7 @@ binance.prototype.watchSpotPrice = function (symbol, callback) {
             bin.dataSpot.pop();
         }
         bin.dataSpot.push([data['E'], data['p']]);
-        // console.log([data['E'], data['p']]);
+        // utils.log([data['E'], data['p']]);
 
         callback && callback();
     });
@@ -796,10 +796,10 @@ binance.prototype.watchFuturesPrice = function (symbol, callback) {
     var ws = new WebSocket(this.futuresWSUrl+symbol.toLowerCase()+'@aggTrade', {agent: tunnelingAgent});
 
     ws.on('message', function incoming(data) {
-        // console.log(data);
+        // utils.log(data);
         var data = JSON.parse(data);
         if (data['e'] != 'aggTrade') {
-            console.log(data);
+            utils.log(data);
             return;
         }
         if (bin.dataFutures.length > 100) {
@@ -809,7 +809,7 @@ binance.prototype.watchFuturesPrice = function (symbol, callback) {
             bin.dataFutures.pop();
         }
         bin.dataFutures.push([data['E'], data['p']]);
-        // console.log([data['E'], data['p']]);
+        // utils.log([data['E'], data['p']]);
 
         callback && callback();
     });
@@ -820,7 +820,7 @@ binance.prototype.watchFuturesPrice = function (symbol, callback) {
 //     ws.send('{"method": "UNSUBSCRIBE","params":["'+symbol.toLowerCase()+'@aggTrade"],"id": 1}}');
 // }
 
-binance.prototype.get = async function (url, data, signature) {
+binance.prototype.get = function (url, data, signature) {
     if (signature) {
         data['signature'] = crypto
             .createHmac('sha256', this.secretKey)
@@ -844,14 +844,14 @@ binance.prototype.get = async function (url, data, signature) {
                 if (response.statusCode == 400) {
                     body = JSON.parse(body)
                 }
-                console.log({code: response.statusCode, msg: 'Invalid status code <' + response.statusCode + '>', url: url, data: data, body: body});
+                utils.log({code: response.statusCode, msg: 'Invalid status code <' + response.statusCode + '>', url: url, data: data, body: body});
                 reject({code: response.statusCode, msg: 'Invalid status code <' + response.statusCode + '>', url: url, data: data, body: body});
                 return;
             }
             resolve(JSON.parse(body));
             clearTimeout(l);
         }).on('error', function(e) {
-            console.log('req err', e);
+            utils.log('req err', e);
             clearTimeout(l);
         });
         l = setTimeout(() => {
@@ -866,7 +866,7 @@ binance.prototype.makeQueryString = q =>
         .join('&')}`
     : '';
 
-binance.prototype.post = async function (url, data) {
+binance.prototype.post = function (url, data) {
     data['signature'] = crypto
         .createHmac('sha256', this.secretKey)
         .update(this.makeQueryString(data).substr(1))
@@ -887,14 +887,14 @@ binance.prototype.post = async function (url, data) {
                 if (response.statusCode == 400) {
                     body = JSON.parse(body)
                 }
-                console.log({code: response.statusCode, msg: 'Invalid status code <' + response.statusCode + '>', url: url, data: data, body: body});
+                utils.log({code: response.statusCode, msg: 'Invalid status code <' + response.statusCode + '>', url: url, data: data, body: body});
                 reject({code: response.statusCode, msg: 'Invalid status code <' + response.statusCode + '>', url: url, data: data, body: body});
                 return;
             }
             resolve(JSON.parse(body));
             clearTimeout(l);
         }).on('error', function(e) {
-            console.log(e);
+            utils.log(e);
             clearTimeout(l);
         });
         var l = setTimeout(() => {

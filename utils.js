@@ -1,3 +1,5 @@
+const sd = require('silly-datetime');
+
 function setTimeDateFmt(s) {  // 个位数补齐十位数
     return s < 10 ? '0' + s : s;
 }
@@ -7,7 +9,7 @@ function setTimeDateFmt(s) {  // 个位数补齐十位数
  * @public
  */
 module.exports = {
-    
+
     randomNumber: () => {
         const now = new Date()
         let month = now.getMonth() + 1
@@ -25,10 +27,10 @@ module.exports = {
     },
 
     log: (...msg) => {
-        console.log(...msg);
+        console.log('[' + sd.format(new Date(), 'MM-DD HH:mm:ss') + ']', ...msg);
     },
 
     precision: (num, pre) => {
-        return Number(num.toFixed(pre+1).slice(0,-1));
+        return Number(num.toFixed(pre + 1).slice(0, -1));
     }
 };
