@@ -208,14 +208,14 @@ const binance = new Binance(account.getBinanceInfo('apiKey'), account.getBinance
                 if (binance.dataSpot.length <= 0) return;
 
                 // 检查如果价格大于平均价2次就下单
-                var diff = utils.precision(binance.dataFutures[binance.dataFutures.length - 1][1] - binance.dataSpot[binance.dataSpot.length - 1][1], 10);
+                var diff = utils.precision(binance.dataFutures[1] - binance.dataSpot[1], 10);
                 if (diff > diffAvg) {
                     if (!gtAvgPrice) {
                         gtAvgPrice = true;
                     } else {
                         gtAvgPrice = false;
                         watching = false;
-                        utils.log('buy', binance.dataFutures[binance.dataFutures.length - 1][1], binance.dataSpot[binance.dataSpot.length - 1][1], diffAvg, '<', diff);
+                        utils.log('buy', binance.dataFutures[1], binance.dataSpot[1], diffAvg, '<', diff);
                         if (watching) return;
                         // 下合约单
                         binance.futuresShort(symbol, futuresOrderId, null, buyFuturesQuantity, getTimestamp());
@@ -236,8 +236,8 @@ const binance = new Binance(account.getBinanceInfo('apiKey'), account.getBinance
 
             // 定时输出状态
             if (binance.dataSpot.length > 0 && binance.dataFutures.length > 0) {
-                var diff = utils.precision(binance.dataFutures[binance.dataFutures.length - 1][1] - binance.dataSpot[binance.dataSpot.length - 1][1], 10);
-                utils.log(binance.dataFutures[binance.dataFutures.length - 1][1], binance.dataSpot[binance.dataSpot.length - 1][1], diff);
+                var diff = utils.precision(binance.dataFutures[1] - binance.dataSpot[1], 10);
+                utils.log(binance.dataFutures[1], binance.dataSpot[1], diff);
             }
             await snooze(3000);
 
@@ -342,8 +342,8 @@ const binance = new Binance(account.getBinanceInfo('apiKey'), account.getBinance
                 if (binance.dataSpot.length <= 0) return;
 
                 // 检查如果价格确认2次就下单
-                let spotDiff = binance.dataSpot[binance.dataSpot.length - 1][1] - buySpotPrice;
-                let futuresDiff = binance.dataFutures[binance.dataFutures.length - 1][1] - buyFuturesPrice;
+                let spotDiff = binance.dataSpot[1] - buySpotPrice;
+                let futuresDiff = binance.dataFutures[1] - buyFuturesPrice;
                 if ((spotDiff > 0 && futuresDiff < 0) ||
                     (spotDiff > 0 && futuresDiff > 0 && spotDiff > futuresDiff) ||
                     // (spotDiff < 0 && futuresDiff > 0) ||
@@ -354,7 +354,7 @@ const binance = new Binance(account.getBinanceInfo('apiKey'), account.getBinance
                     } else {
                         confirm = false;
                         watching = false;
-                        utils.log('sell', binance.dataSpot[binance.dataSpot.length - 1][1], buySpotPrice, spotDiff, binance.dataFutures[binance.dataFutures.length - 1][1], buyFuturesPrice, futuresDiff);
+                        utils.log('sell', binance.dataSpot[1], buySpotPrice, spotDiff, binance.dataFutures[1], buyFuturesPrice, futuresDiff);
                         if (watching) return;
                         // 现货卖出
                         binance.spotSell(symbol, spotCloseOrderId, null, sellSpotQuantity, getTimestamp());
@@ -377,9 +377,9 @@ const binance = new Binance(account.getBinanceInfo('apiKey'), account.getBinance
 
             // 定时输出状态
             if (binance.dataSpot.length > 0 && binance.dataFutures.length > 0) {
-                let spotDiff = binance.dataSpot[binance.dataSpot.length - 1][1] - buySpotPrice;
-                let futuresDiff = binance.dataFutures[binance.dataFutures.length - 1][1] - buyFuturesPrice
-                utils.log(binance.dataSpot[binance.dataSpot.length - 1][1], buySpotPrice, spotDiff, binance.dataFutures[binance.dataFutures.length - 1][1], buyFuturesPrice, futuresDiff);
+                let spotDiff = binance.dataSpot[1] - buySpotPrice;
+                let futuresDiff = binance.dataFutures[1] - buyFuturesPrice
+                utils.log(binance.dataSpot[1], buySpotPrice, spotDiff, binance.dataFutures[1], buyFuturesPrice, futuresDiff);
             }
             await snooze(3000);
         } else if (phase == 7) { // 等待平仓结果

@@ -760,13 +760,14 @@ Binance.prototype.watchSpotPrice = function (symbol, callback) {
             utils.log(data);
             return;
         }
-        if (bin.dataSpot.length > 100) {
-            bin.dataSpot.shift();
-        }
-        if (bin.dataSpot.length>0 && ~~(bin.dataSpot[bin.dataSpot.length-1][0]/1000) == ~~(data['E']/1000)) {
-            bin.dataSpot.pop();
-        }
-        bin.dataSpot.push([data['E'], data['p']]);
+        // if (bin.dataSpot.length > 2) {
+        //     bin.dataSpot.shift();
+        // }
+        // if (bin.dataSpot.length>0 && ~~(bin.dataSpot[bin.dataSpot.length-1][0]/1000) == ~~(data['E']/1000)) {
+        //     bin.dataSpot.pop();
+        // }
+        // bin.dataSpot.push([data['E'], data['p']]);
+        bin.dataSpot = [data['E'], data['p']];
         // utils.log([data['E'], data['p']]);
 
         callback && callback();
@@ -799,13 +800,14 @@ Binance.prototype.watchFuturesPrice = function (symbol, callback) {
             utils.log(data);
             return;
         }
-        if (bin.dataFutures.length > 100) {
-            bin.dataFutures.shift();
-        }
-        if (bin.dataFutures.length>0 && ~~(bin.dataFutures[bin.dataFutures.length-1][0]/1000) == ~~(data['E']/1000)) {
-            bin.dataFutures.pop();
-        }
-        bin.dataFutures.push([data['E'], data['p']]);
+        // if (bin.dataFutures.length > 2) {
+        //     bin.dataFutures.shift();
+        // }
+        // if (bin.dataFutures.length>0 && ~~(bin.dataFutures[bin.dataFutures.length-1][0]/1000) == ~~(data['E']/1000)) {
+        //     bin.dataFutures.pop();
+        // }
+        // bin.dataFutures.push([data['E'], data['p']]);
+        bin.dataFutures = [data['E'], data['p']];
         // utils.log([data['E'], data['p']]);
 
         callback && callback();
