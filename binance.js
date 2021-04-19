@@ -459,14 +459,15 @@ Binance.prototype.spotBuy = async function(symbol,orderId,price,quantity,timesta
         newClientOrderId: orderId, // 自定义的唯一订单ID
         // stopPrice: '', // 仅 STOP_LOSS, STOP_LOSS_LIMIT, TAKE_PROFIT, 和TAKE_PROFIT_LIMIT 需要此参数。
         // icebergQty: '', // 仅使用 LIMIT, STOP_LOSS_LIMIT, 和 TAKE_PROFIT_LIMIT 创建新的 iceberg 订单时需要此参数
-        newOrderRespType: 'ACK', // 设置响应JSON。 ACK，RESULT或FULL； "MARKET"和" LIMIT"订单类型默认为"FULL"，所有其他订单默认为"ACK"。
+        newOrderRespType: 'RESULT', // 设置响应JSON。 ACK，RESULT或FULL； "MARKET"和" LIMIT"订单类型默认为"FULL"，所有其他订单默认为"ACK"。
         // recvWindow: '', // 交易时效性 赋值不能大于 60000 60秒
         timestamp: timestamp,//new Date().getTime(),
     };
     if (price) {
         option.price = price;
     }
-    let data = await this.post(url, option).catch (error => utils.log('err', error));
+    let data = await this.post(url, option);
+    utils.log(data);
     return data;
 }
 
@@ -502,14 +503,15 @@ Binance.prototype.spotSell = async function(symbol,orderId,price,quantity,timest
         newClientOrderId: orderId, // 自定义的唯一订单ID
         // stopPrice: '', // 仅 STOP_LOSS, STOP_LOSS_LIMIT, TAKE_PROFIT, 和TAKE_PROFIT_LIMIT 需要此参数。
         // icebergQty: '', // 仅使用 LIMIT, STOP_LOSS_LIMIT, 和 TAKE_PROFIT_LIMIT 创建新的 iceberg 订单时需要此参数
-        newOrderRespType: 'ACK', // 设置响应JSON。 ACK，RESULT或FULL； "MARKET"和" LIMIT"订单类型默认为"FULL"，所有其他订单默认为"ACK"。
+        newOrderRespType: 'RESULT', // 设置响应JSON。 ACK，RESULT或FULL； "MARKET"和" LIMIT"订单类型默认为"FULL"，所有其他订单默认为"ACK"。
         // recvWindow: '', // 交易时效性 赋值不能大于 60000 60秒
         timestamp: timestamp,//new Date().getTime(),
     };
     if (price) {
         option.price = price;
     }
-    let data = await this.post(url, option).catch (error => utils.log('err', error));
+    let data = await this.post(url, option);
+    utils.log(data);
     return data;
 }
 
@@ -556,7 +558,7 @@ Binance.prototype.futuresLeverage = async function(symbol,leverage,timestamp) {
         // timestamp	LONG	YES
         timestamp: timestamp,//new Date().getTime(),
     };
-    let data = await this.post(url, option).catch (error => utils.log('err', error));
+    let data = await this.post(url, option);
     return data;
 }
 
@@ -618,7 +620,7 @@ Binance.prototype.futuresShort = async function(symbol,orderId,price,quantity,ti
         // workingType	ENUM	NO	stopPrice 触发类型: MARK_PRICE(标记价格), CONTRACT_PRICE(合约最新价). 默认 CONTRACT_PRICE
         // priceProtect	STRING	NO	条件单触发保护："TRUE","FALSE", 默认"FALSE". 仅 STOP, STOP_MARKET, TAKE_PROFIT, TAKE_PROFIT_MARKET 需要此参数
         // newOrderRespType	ENUM	NO	"ACK", "RESULT", 默认 "ACK"
-        newOrderRespType: 'ACK',
+        newOrderRespType: 'RESULT',
         // recvWindow	LONG	NO	交易时效性
         
         timestamp: timestamp,//new Date().getTime(),
@@ -626,7 +628,8 @@ Binance.prototype.futuresShort = async function(symbol,orderId,price,quantity,ti
     if (price) {
         option.price = price;
     }
-    let data = await this.post(url, option).catch (error => utils.log('err', error));
+    let data = await this.post(url, option);
+    utils.log(data);
     return data;
 }
 
@@ -663,7 +666,7 @@ Binance.prototype.futuresShortClose = async function(symbol,orderId,price,quanti
         // workingType	ENUM	NO	stopPrice 触发类型: MARK_PRICE(标记价格), CONTRACT_PRICE(合约最新价). 默认 CONTRACT_PRICE
         // priceProtect	STRING	NO	条件单触发保护："TRUE","FALSE", 默认"FALSE". 仅 STOP, STOP_MARKET, TAKE_PROFIT, TAKE_PROFIT_MARKET 需要此参数
         // newOrderRespType	ENUM	NO	"ACK", "RESULT", 默认 "ACK"
-        newOrderRespType: 'ACK',
+        newOrderRespType: 'RESULT',
         // recvWindow	LONG	NO	交易时效性
         
         timestamp: timestamp,//new Date().getTime(),
@@ -671,7 +674,8 @@ Binance.prototype.futuresShortClose = async function(symbol,orderId,price,quanti
     if (price !== null) {
         option.price = price;
     }
-    let data = await this.post(url, option).catch (error => utils.log('err', error));
+    let data = await this.post(url, option);
+    utils.log(data);
     return data;
 }
 
@@ -693,14 +697,12 @@ Binance.prototype.getFundingDiffAvg = async function (symbol,timestamp) {
     var tmp_spot = [];
     var tmp_futures = [];
     var interval = '1m';
-    var num = 300;
+    var num = 120;
     // spot
     var data = await this.get(this.spotUrl + '/api/v3/klines', {
         symbol: symbol,
         interval: interval,
         limit: num
-    }).catch(error => {
-        utils.log(error);
     });
     if (!data || data.length <= 0) {
         utils.log('err spot data', tmp_spot);
